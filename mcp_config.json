@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "solana-trader": {
+      "url": "http://YOUR_IP:8000/mcp/",
+      "headers": {"Authorization": "Bearer change_this_to_a_strong_random_token_32chars"}
+    }
+  }
+}
