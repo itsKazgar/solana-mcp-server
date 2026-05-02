@@ -1,5 +1,7 @@
 # 🤖 Solana Trading MCP Server
 
+
+> 🖥️ **[Live Demo →](https://itskazgar.github.io/solana-mcp-server/demo.html)**
 An AI-powered Solana trading bot with a live dashboard, built on the MCP (Model Context Protocol) framework.
 
 ## Features
