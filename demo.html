@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOLANA MCP // TRADING TERMINAL — DEMO</title>
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#300a24;--bg2:#200618;--border:#4a1540;
+  --text:#ffffff;--muted:#a07090;
+  --orange:#e95420;--green:#4caf50;--red:#f44336;--blue:#2196f3;
+  --font:'Ubuntu Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;}
+a{color:var(--orange);text-decoration:none;}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:2px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:12px;}
+.sidebar-title{font-size:15px;font-weight:700;letter-spacing:.05em;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.sidebar-sub{font-size:9px;color:var(--muted);letter-spacing:.2em;margin-top:3px;}
+.term-header{font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;margin:4px 0;}
+.toggle{position:relative;width:32px;height:16px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.slider-t{position:absolute;inset:0;background:#4a1540;border-radius:8px;transition:.3s;}
+.slider-t:before{content:'';position:absolute;width:10px;height:10px;left:3px;top:3px;background:#a07090;border-radius:50%;transition:.3s;}
+input:checked+.slider-t{background:var(--green);}
+input:checked+.slider-t:before{transform:translateX(16px);background:#fff;}
+.flag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:2px;margin:2px;}
+.flag-paper{background:#0f3a0f;color:var(--green);border:1px solid #1f6a1f;}
+.flag-warn{background:#3a0f0f;color:var(--orange);border:1px solid #6a1f1f;}
+.sb-label{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.sb-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;padding:5px 8px;border-radius:2px;outline:none;}
+.sb-input:focus{border-color:var(--orange);}
+.sb-btn{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:7px;border-radius:2px;cursor:pointer;transition:.2s;}
+.sb-btn:hover{border-color:var(--orange);color:var(--orange);}
+.sb-info{font-size:10px;color:var(--muted);line-height:2;}
+hr{border:none;border-top:1px solid var(--border);margin:4px 0;}
+
+/* MAIN */
+.main{flex:1;padding:20px 24px;overflow:auto;min-width:0;}
+.page-title{font-size:18px;font-weight:700;letter-spacing:.05em;}
+.page-sub{font-size:10px;color:var(--muted);letter-spacing:.15em;margin-top:3px;}
+
+/* STATUS BAR */
+.status-bar{display:flex;align-items:center;gap:20px;padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:2px;font-size:11px;color:var(--muted);margin:14px 0;flex-wrap:wrap;}
+.status-item{display:flex;align-items:center;gap:6px;}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.dot-green{background:var(--green);}
+.dot-orange{background:var(--orange);}
+.dot-red{background:var(--red);}
+
+/* METRIC GRID */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:16px 18px;position:relative;overflow:hidden;}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.mc-orange::before{background:var(--orange);}
+.mc-green::before{background:var(--green);}
+.mc-red::before{background:var(--red);}
+.mc-blue::before{background:var(--blue);}
+.metric-label{font-size:10px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px;}
+.metric-value{font-size:28px;font-weight:700;line-height:1;}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:5px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:18px;gap:0;overflow-x:auto;}
+.tab{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);padding:10px 20px;cursor:pointer;border:none;background:transparent;font-family:var(--font);border-bottom:2px solid transparent;white-space:nowrap;transition:.2s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--text);border-bottom:2px solid var(--orange);background:var(--bg2);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* SECTION HEADER */
+.sec-hdr{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.25em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px;}
+
+/* PROPOSAL CARDS */
+.proposal{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:14px 16px;margin-bottom:10px;}
+.prop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.prop-badge{font-size:10px;padding:3px 10px;border-radius:2px;font-weight:700;}
+.badge-buy{background:#0f3a0f;color:var(--green);border:1px solid #1f6a1f;}
+.badge-sell{background:#3a0f0f;color:var(--red);border:1px solid #6a1f1f;}
+.badge-swap{background:#0f1a3a;color:var(--blue);border:1px solid #1f3a6a;}
+.prop-meta{font-size:10px;color:var(--muted);}
+.reasoning-box{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:10px;font-size:12px;color:#d0b0c0;line-height:1.6;margin:8px 0;}
+.reasoning-label{font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px;}
+.prop-grid{display:grid;grid-template-columns:3fr 2fr;gap:12px;}
+.action-btns{display:flex;gap:8px;margin-bottom:10px;}
+.btn{font-family:var(--font);font-size:11px;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;border:1px solid var(--border);background:var(--bg2);color:var(--text);padding:7px 16px;cursor:pointer;transition:.2s;}
+.btn:hover{border-color:var(--orange);color:var(--orange);}
+.btn-primary{background:var(--orange);border-color:var(--orange);}
+.btn-primary:hover{background:#bf4318;border-color:#bf4318;color:#fff;}
+.btn-sm{padding:5px 10px;font-size:10px;}
+.prop-detail{font-size:10px;color:var(--muted);line-height:2;}
+pre.code{background:var(--bg);border:1px solid var(--border);padding:10px;font-size:11px;border-radius:2px;overflow-x:auto;color:#d0b0c0;white-space:pre-wrap;}
+
+/* ACTIVITY TABLE */
+.act-table{width:100%;border-collapse:collapse;font-size:11px;}
+.act-table th{font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;}
+.act-table td{padding:8px 10px;border-bottom:1px solid rgba(74,21,64,.4);color:var(--text);}
+.act-table tr:hover td{background:rgba(74,21,64,.3);}
+.st-pending{color:var(--orange);}
+.st-executed{color:var(--blue);}
+.st-rejected{color:var(--red);}
+.st-approved{color:var(--green);}
+
+/* AGENT CARDS */
+.agent-card{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:14px 18px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.agent-name{font-size:13px;display:flex;align-items:center;gap:8px;}
+.agent-stats{font-size:11px;text-align:right;}
+
+/* CONNECT TAB */
+.connect-info{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:12px;font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:16px;}
+.tools-table{width:100%;border-collapse:collapse;font-size:11px;}
+.tools-table th{font-size:9px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;}
+.tools-table td{padding:7px 10px;border-bottom:1px solid rgba(74,21,64,.3);}
+.type-write{color:var(--orange);}
+.type-read{color:var(--green);}
+
+/* CHART CANVAS */
+canvas{max-height:180px;}
+
+/* DEMO BANNER */
+.demo-banner{background:#0f1a3a;border:1px solid #2196f3;border-radius:2px;padding:8px 14px;font-size:11px;color:#2196f3;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+/* MANUAL TRADE */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;}
+.form-input{background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;border-radius:2px;outline:none;}
+.form-input:focus{border-color:var(--orange);}
+select.form-input option{background:var(--bg2);}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px;font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:2px;}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .metric-grid{grid-template-columns:1fr 1fr;}
+  .prop-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div>
+    <div class="sidebar-title">SOLANA MCP</div>
+    <div class="sidebar-sub">TRADING TERMINAL v1.0</div>
+  </div>
+  <hr>
+  <div>
+    <div class="term-header">// mode</div>
+    <div class="toggle-row">
+      <span>Paper Mode</span>
+      <label class="toggle"><input type="checkbox" checked id="paperToggle"><span class="slider-t"></span></label>
+    </div>
+    <div class="toggle-row">
+      <span>Require Approval</span>
+      <label class="toggle"><input type="checkbox" checked id="approvalToggle"><span class="slider-t"></span></label>
+    </div>
+    <span class="flag flag-paper" id="modeFlag">PAPER MODE</span>
+  </div>
+  <hr>
+  <div>
+    <div class="term-header">// risk limits</div>
+    <div class="sb-label">Max Trade SOL</div>
+    <input class="sb-input" type="number" value="0.50" step="0.1">
+    <div class="sb-label" style="margin-top:8px;">Max Daily SOL</div>
+    <input class="sb-input" type="number" value="5.0" step="1">
+    <div class="sb-label" style="margin-top:8px;">Max Slippage bps</div>
+    <input class="sb-input" type="number" value="100" step="10">
+    <button class="sb-btn" style="margin-top:8px;" onclick="alert('Demo mode — limits saved!')">Apply Limits</button>
+  </div>
+  <hr>
+  <div>
+    <div class="term-header">// block token</div>
+    <input class="sb-input" placeholder="Enter mint...">
+    <button class="sb-btn" style="margin-top:6px;" onclick="alert('Demo mode — token blocked!')">Block Token</button>
+  </div>
+  <hr>
+  <div class="sb-info">
+    NET &nbsp;&nbsp;mainnet-beta<br>
+    MCP &nbsp;&nbsp;:8000/mcp/<br>
+    DASH &nbsp;:8501
+  </div>
+  <hr>
+  <button class="sb-btn" onclick="location.reload()">Refresh</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="demo-banner">
+    <span>&#9432;</span>
+    <span>DEMO MODE — Live data replaced with realistic mock data. <a href="https://github.com/itsKazgar/solana-mcp-server" target="_blank">Deploy your own →</a></span>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+    <div>
+      <div class="page-title">SOLANA MCP // TRADING TERMINAL</div>
+      <div class="page-sub">UNIVERSAL AI AGENT TRADING INTERFACE · HUMAN-IN-THE-LOOP</div>
+    </div>
+    <div style="text-align:right;font-size:10px;color:var(--muted);line-height:1.8;" id="clock-display"></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-item"><span class="dot dot-green"></span><span>MCP SERVER RUNNING</span></div>
+    <div class="status-item"><span class="dot dot-orange"></span><span>MODE: PAPER</span></div>
+    <div class="status-item"><span class="dot dot-green"></span><span>AGENTS: 2 ACTIVE / 3 TOTAL</span></div>
+    <div class="status-item"><span class="dot dot-green"></span><span>DAILY: 1.240 / 5.0 SOL (25%)</span></div>
+    <div class="status-item" style="margin-left:auto;"><span>APPROVAL: ON</span></div>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric-card mc-orange">
+      <div class="metric-label">Pending Approval</div>
+      <div class="metric-value" style="color:var(--orange);">2</div>
+      <div class="metric-sub">awaiting review</div>
+    </div>
+    <div class="metric-card mc-green">
+      <div class="metric-label">Executed</div>
+      <div class="metric-value" style="color:var(--green);">47</div>
+      <div class="metric-sub">all time</div>
+    </div>
+    <div class="metric-card mc-red">
+      <div class="metric-label">Rejected</div>
+      <div class="metric-value" style="color:var(--red);">8</div>
+      <div class="metric-sub">all time</div>
+    </div>
+    <div class="metric-card mc-blue">
+      <div class="metric-label">Total Agents</div>
+      <div class="metric-value" style="color:var(--blue);">3</div>
+      <div class="metric-sub">2 active now</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab(this,'tab-approvals')">Approvals</button>
+    <button class="tab" onclick="switchTab(this,'tab-activity')">Activity</button>
+    <button class="tab" onclick="switchTab(this,'tab-agents')">Agents</button>
+    <button class="tab" onclick="switchTab(this,'tab-manual')">Manual Trade</button>
+    <button class="tab" onclick="switchTab(this,'tab-connect')">Connect</button>
+    <button class="tab" onclick="switchTab(this,'tab-botstudio')">Bot Studio</button>
+    <button class="tab" onclick="switchTab(this,'tab-txtail')">TX Trail</button>
+  </div>
+
+  <!-- APPROVALS -->
+  <div id="tab-approvals" class="tab-content active">
+    <div class="sec-hdr">// pending proposals</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-primary btn-sm" onclick="alert('Demo — all approved!')">APPROVE ALL</button>
+      <button class="btn btn-sm" onclick="alert('Demo — all rejected!')">REJECT ALL</button>
+    </div>
+
+    <!-- Proposal 1 -->
+    <div class="proposal">
+      <div class="prop-head">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="prop-badge badge-buy">BUY</span>
+          <span style="font-size:12px;">prop_7f3a9c  //  hermes-agent-01  //  2m ago</span>
+        </div>
+      </div>
+      <div class="prop-grid">
+        <div>
+          <div class="reasoning-label">agent reasoning</div>
+          <div class="reasoning-box">Token BONK showing strong momentum on pump.fun bonding curve at 67%. Volume up 340% in last hour. Risk/reward favorable at current mcap of $2.1M. Entering small position to capture breakout.</div>
+          <div class="reasoning-label" style="margin-top:10px;">parameters</div>
+          <pre class="code">{
+  "mint_address": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "sol_amount": 0.25,
+  "slippage_bps": 100
+}</pre>
+          <span class="flag flag-warn">HIGH_VOLUME</span>
+          <span class="flag flag-paper">PAPER</span>
+        </div>
+        <div>
+          <div class="reasoning-label">action</div>
+          <div class="action-btns">
+            <button class="btn btn-primary btn-sm" onclick="dismissProposal(this)">APPROVE</button>
+            <button class="btn btn-sm" onclick="dismissProposal(this)">REJECT</button>
+          </div>
+          <div class="prop-detail">
+            ID &nbsp;&nbsp;&nbsp;&nbsp;prop_7f3a9c<br>
+            TOOL &nbsp;&nbsp;buy_pumpfun_token<br>
+            AGENT &nbsp;hermes-agent-01<br>
+            TIME &nbsp;&nbsp;2025-04-30 13:49:02<br>
+            PAPER &nbsp;YES
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proposal 2 -->
+    <div class="proposal">
+      <div class="prop-head">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="prop-badge badge-swap">SWAP</span>
+          <span style="font-size:12px;">prop_2d8e1f  //  claude-agent-02  //  8m ago</span>
+        </div>
+      </div>
+      <div class="prop-grid">
+        <div>
+          <div class="reasoning-label">agent reasoning</div>
+          <div class="reasoning-box">Rotating SOL profits into USDC to lock in gains. Portfolio currently 80% SOL exposure which exceeds target. Swapping 1 SOL to USDC via Jupiter for best execution price.</div>
+          <div class="reasoning-label" style="margin-top:10px;">parameters</div>
+          <pre class="code">{
+  "input_mint": "So11111111111111111111111111111111111111112",
+  "output_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "amount_sol": 1.0,
+  "slippage_bps": 50
+}</pre>
+          <span class="flag flag-paper">PAPER</span>
+        </div>
+        <div>
+          <div class="reasoning-label">action</div>
+          <div class="action-btns">
+            <button class="btn btn-primary btn-sm" onclick="dismissProposal(this)">APPROVE</button>
+            <button class="btn btn-sm" onclick="dismissProposal(this)">REJECT</button>
+          </div>
+          <div class="prop-detail">
+            ID &nbsp;&nbsp;&nbsp;&nbsp;prop_2d8e1f<br>
+            TOOL &nbsp;&nbsp;jupiter_swap<br>
+            AGENT &nbsp;claude-agent-02<br>
+            TIME &nbsp;&nbsp;2025-04-30 13:43:15<br>
+            PAPER &nbsp;YES
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY -->
+  <div id="tab-activity" class="tab-content">
+    <div class="sec-hdr">// trade activity</div>
+    <canvas id="activityChart" style="margin-bottom:16px;"></canvas>
+    <div class="sec-hdr">// transaction log</div>
+    <table class="act-table">
+      <thead><tr><th>ID</th><th>Tool</th><th>Agent</th><th>Status</th><th>SOL</th><th>Time</th><th>TX</th></tr></thead>
+      <tbody>
+        <tr><td>prop_7f3a9c</td><td>BUY PUMPFUN TOKEN</td><td>hermes-agent-01</td><td class="st-pending">PENDING</td><td>0.25</td><td>2m ago</td><td>---</td></tr>
+        <tr><td>prop_2d8e1f</td><td>JUPITER SWAP</td><td>claude-agent-02</td><td class="st-pending">PENDING</td><td>1.00</td><td>8m ago</td><td>---</td></tr>
+        <tr><td>prop_9a1c3b</td><td>BUY PUMPFUN TOKEN</td><td>hermes-agent-01</td><td class="st-executed">EXECUTED</td><td>0.10</td><td>23m ago</td><td>4xK9mP2r...</td></tr>
+        <tr><td>prop_5e7d2a</td><td>SELL PUMPFUN TOKEN</td><td>hermes-agent-01</td><td class="st-executed">EXECUTED</td><td>0.18</td><td>41m ago</td><td>7nQw3Lx1...</td></tr>
+        <tr><td>prop_1b4f8c</td><td>JUPITER SWAP</td><td>claude-agent-02</td><td class="st-rejected">REJECTED</td><td>2.00</td><td>1h ago</td><td>---</td></tr>
+        <tr><td>prop_3c6e9d</td><td>BUY PUMPFUN TOKEN</td><td>hermes-agent-01</td><td class="st-executed">EXECUTED</td><td>0.05</td><td>2h ago</td><td>2mRt8Kz4...</td></tr>
+        <tr><td>prop_8f2a1e</td><td>BUY PUMPFUN TOKEN</td><td>langgraph-bot</td><td class="st-executed">EXECUTED</td><td>0.15</td><td>3h ago</td><td>9pBv5Yn7...</td></tr>
+        <tr><td>prop_6d4b7f</td><td>SELL PUMPFUN TOKEN</td><td>langgraph-bot</td><td class="st-rejected">REJECTED</td><td>0.30</td><td>4h ago</td><td>---</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- AGENTS -->
+  <div id="tab-agents" class="tab-content">
+    <div class="sec-hdr">// connected agents</div>
+    <div class="connect-info">
+      ANY agent that speaks MCP connects with one URL:<br>
+      Claude &nbsp; LangGraph &nbsp; CrewAI &nbsp; Ollama &nbsp; Hermes &nbsp; Kimi &nbsp; AutoGen &nbsp; Custom scripts
+    </div>
+    <div class="agent-card">
+      <div>
+        <div class="agent-name"><span class="dot dot-green"></span><span>hermes-agent-01</span><span style="font-size:10px;color:var(--green);">ONLINE</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;">Last seen 2m ago · Connected 2025-04-30 10:12</div>
+      </div>
+      <div class="agent-stats">
+        <span style="color:var(--orange);">34</span><span style="color:var(--muted);"> proposals &nbsp;</span>
+        <span style="color:var(--green);">28</span><span style="color:var(--muted);"> ok &nbsp;</span>
+        <span style="color:var(--red);">4</span><span style="color:var(--muted);"> rejected</span>
+      </div>
+    </div>
+    <div class="agent-card">
+      <div>
+        <div class="agent-name"><span class="dot dot-green"></span><span>claude-agent-02</span><span style="font-size:10px;color:var(--green);">ONLINE</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;">Last seen 8m ago · Connected 2025-04-30 11:45</div>
+      </div>
+      <div class="agent-stats">
+        <span style="color:var(--orange);">19</span><span style="color:var(--muted);"> proposals &nbsp;</span>
+        <span style="color:var(--green);">15</span><span style="color:var(--muted);"> ok &nbsp;</span>
+        <span style="color:var(--red);">3</span><span style="color:var(--muted);"> rejected</span>
+      </div>
+    </div>
+    <div class="agent-card">
+      <div>
+        <div class="agent-name"><span class="dot" style="background:#444;"></span><span>langgraph-bot</span><span style="font-size:10px;color:#666;">OFFLINE</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;">Last seen 6h ago · Connected 2025-04-29 18:30</div>
+      </div>
+      <div class="agent-stats">
+        <span style="color:var(--orange);">4</span><span style="color:var(--muted);"> proposals &nbsp;</span>
+        <span style="color:var(--green);">2</span><span style="color:var(--muted);"> ok &nbsp;</span>
+        <span style="color:var(--red);">1</span><span style="color:var(--muted);"> rejected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL TRADE -->
+  <div id="tab-manual" class="tab-content">
+    <div class="sec-hdr">// manual trade entry</div>
+    <div style="margin-bottom:14px;">
+      <div class="form-label" style="margin-bottom:6px;">Trade Type</div>
+      <select class="form-input" style="width:280px;" id="tradeType" onchange="updateTradeForm()">
+        <option>Buy Pump.fun Token</option>
+        <option>Sell Pump.fun Token</option>
+        <option>Jupiter Swap</option>
+      </select>
+    </div>
+    <div id="tradeForm">
+      <div class="form-row">
+        <div class="form-group">
+          <div class="form-label">Token Mint Address</div>
+          <input class="form-input" placeholder="Enter mint address...">
+        </div>
+        <div class="form-group">
+          <div class="form-label">SOL Amount</div>
+          <input class="form-input" type="number" value="0.10" step="0.01">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <div class="form-label">Slippage bps</div>
+          <input class="form-input" type="number" value="100" step="10">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Reason / Notes</div>
+          <input class="form-input" placeholder="Why are you buying this?">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="alert('Demo — proposal submitted! Check Approvals tab.')">SUBMIT BUY PROPOSAL</button>
+    </div>
+  </div>
+
+  <!-- CONNECT -->
+  <div id="tab-connect" class="tab-content">
+    <div class="sec-hdr">// connect your agent</div>
+    <div class="sec-hdr">// claude desktop</div>
+    <pre class="code">{
+  "mcpServers": {
+    "solana-trader": {
+      "url": "http://YOUR_IP:8000/mcp/",
+      "headers": {"Authorization": "Bearer YOUR_TOKEN"}
+    }
+  }
+}</pre>
+    <div class="sec-hdr" style="margin-top:14px;">// ollama / hermes / any local llm</div>
+    <pre class="code">from langchain_ollama import ChatOllama
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+
+async def run():
+    client = MultiServerMCPClient({
+        "solana_trader": {
+            "url": "http://YOUR_IP:8000/mcp/",
+            "transport": "streamable_http",
+            "headers": {"Authorization": "Bearer YOUR_TOKEN"}
+        }
+    })
+    tools = await client.get_tools()
+    model = ChatOllama(model="hermes3")
+    agent = create_react_agent(model, tools)
+    return agent</pre>
+    <div class="sec-hdr" style="margin-top:14px;">// available tools</div>
+    <table class="tools-table">
+      <thead><tr><th>Tool</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>get_trending_pumpfun_tokens</td><td class="type-read">READ</td><td>Trending tokens on pump.fun</td></tr>
+        <tr><td>get_token_price</td><td class="type-read">READ</td><td>Current USD price from Jupiter</td></tr>
+        <tr><td>get_token_info</td><td class="type-read">READ</td><td>Name, symbol, mcap, bonding curve %</td></tr>
+        <tr><td>search_tokens</td><td class="type-read">READ</td><td>Search tokens by name or symbol</td></tr>
+        <tr><td>rug_check</td><td class="type-read">READ</td><td>Holder concentration and authority risk</td></tr>
+        <tr><td>get_wallet_tokens</td><td class="type-read">READ</td><td>All SPL token balances in wallet</td></tr>
+        <tr><td>get_sol_balance</td><td class="type-read">READ</td><td>SOL balance of configured wallet</td></tr>
+        <tr><td>get_swap_quote</td><td class="type-read">READ</td><td>Jupiter price quote, no execution</td></tr>
+        <tr><td>buy_pumpfun_token</td><td class="type-write">WRITE</td><td>Buy token on pump.fun bonding curve</td></tr>
+        <tr><td>sell_pumpfun_token</td><td class="type-write">WRITE</td><td>Sell token on pump.fun bonding curve</td></tr>
+        <tr><td>create_pumpfun_token</td><td class="type-write">WRITE</td><td>Launch new token on pump.fun</td></tr>
+        <tr><td>jupiter_swap</td><td class="type-write">WRITE</td><td>Best-price swap via Jupiter</td></tr>
+        <tr><td>propose_trade</td><td class="type-write">WRITE</td><td>Submit natural language trade proposal</td></tr>
+        <tr><td>get_portfolio</td><td class="type-read">READ</td><td>Portfolio summary and proposals count</td></tr>
+        <tr><td>get_risk_limits</td><td class="type-read">READ</td><td>Current risk limits in effect</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BOT STUDIO -->
+  <div id="tab-botstudio" class="tab-content">
+    <div class="sec-hdr">// bot studio</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="proposal">
+        <div class="reasoning-label">strategy</div>
+        <div style="font-size:13px;margin:8px 0;">Pump.fun Momentum</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8;">
+          Buy tokens at 60-70% bonding curve<br>
+          Sell at 85%+ or -15% stop loss<br>
+          Max position: 0.25 SOL
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <span class="flag flag-paper">ACTIVE</span>
+          <span class="flag flag-paper">PAPER</span>
+        </div>
+      </div>
+      <div class="proposal">
+        <div class="reasoning-label">performance (paper)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div><div style="font-size:10px;color:var(--muted);">P&amp;L</div><div style="font-size:18px;color:var(--green);">+2.4 SOL</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">Win Rate</div><div style="font-size:18px;color:var(--text);">68%</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">Trades</div><div style="font-size:18px;color:var(--text);">34</div></div>
+          <div><div style="font-size:10px;color:var(--muted);">Avg Hold</div><div style="font-size:18px;color:var(--text);">14m</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="sec-hdr">// configure strategy</div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Entry Bonding Curve %</div>
+        <input class="form-input" type="number" value="65">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Exit Bonding Curve %</div>
+        <input class="form-input" type="number" value="85">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Stop Loss %</div>
+        <input class="form-input" type="number" value="15">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Position Size SOL</div>
+        <input class="form-input" type="number" value="0.25" step="0.05">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="alert('Demo — strategy saved!')">SAVE STRATEGY</button>
+  </div>
+
+  <!-- TX TRAIL -->
+  <div id="tab-txtail" class="tab-content">
+    <div class="sec-hdr">// transaction trail</div>
+    <table class="act-table">
+      <thead><tr><th>Timestamp</th><th>Type</th><th>Token</th><th>SOL</th><th>Status</th><th>TX Hash</th></tr></thead>
+      <tbody>
+        <tr><td>15:49:02</td><td>BUY</td><td>BONK</td><td>0.25</td><td class="st-pending">PENDING</td><td>---</td></tr>
+        <tr><td>15:43:15</td><td>SWAP</td><td>SOL→USDC</td><td>1.00</td><td class="st-pending">PENDING</td><td>---</td></tr>
+        <tr><td>15:28:44</td><td>BUY</td><td>WIF</td><td>0.10</td><td class="st-executed">EXECUTED</td><td>4xK9mP2r7nQw...</td></tr>
+        <tr><td>15:10:21</td><td>SELL</td><td>POPCAT</td><td>0.18</td><td class="st-executed">EXECUTED</td><td>7nQw3Lx1mBt5...</td></tr>
+        <tr><td>14:51:09</td><td>SWAP</td><td>SOL→USDC</td><td>2.00</td><td class="st-rejected">REJECTED</td><td>---</td></tr>
+        <tr><td>13:33:57</td><td>BUY</td><td>MYRO</td><td>0.05</td><td class="st-executed">EXECUTED</td><td>2mRt8Kz4pLx9...</td></tr>
+        <tr><td>12:15:33</td><td>BUY</td><td>BOME</td><td>0.15</td><td class="st-executed">EXECUTED</td><td>9pBv5Yn7qRz2...</td></tr>
+        <tr><td>11:47:18</td><td>SELL</td><td>WIF</td><td>0.30</td><td class="st-rejected">REJECTED</td><td>---</td></tr>
+        <tr><td>10:22:05</td><td>BUY</td><td>BONK</td><td>0.20</td><td class="st-executed">EXECUTED</td><td>3kMn6Pq8sYv1...</td></tr>
+        <tr><td>09:14:52</td><td>SWAP</td><td>USDC→SOL</td><td>0.50</td><td class="st-executed">EXECUTED</td><td>6hJc4Wf2tNb8...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  if (id === 'tab-activity') renderChart();
+}
+
+function dismissProposal(btn) {
+  const card = btn.closest('.proposal');
+  card.style.opacity = '0';
+  card.style.transition = 'opacity 0.3s';
+  setTimeout(() => card.remove(), 300);
+}
+
+const paperToggle = document.getElementById('paperToggle');
+const modeFlag = document.getElementById('modeFlag');
+paperToggle.addEventListener('change', () => {
+  if (paperToggle.checked) {
+    modeFlag.className = 'flag flag-paper';
+    modeFlag.textContent = 'PAPER MODE';
+  } else {
+    modeFlag.className = 'flag flag-warn';
+    modeFlag.textContent = 'LIVE MODE';
+  }
+});
+
+function updateClock() {
+  const now = new Date();
+  const d = now.toISOString().split('T')[0];
+  const t = now.toTimeString().slice(0,8);
+  document.getElementById('clock-display').innerHTML = d + '<br>' + t + ' UTC';
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+let chartRendered = false;
+function renderChart() {
+  if (chartRendered) return;
+  chartRendered = true;
+  const ctx = document.getElementById('activityChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['PENDING','EXECUTED','REJECTED','APPROVED'],
+      datasets: [{
+        data: [2, 47, 8, 0],
+        backgroundColor: ['#e95420','#2196f3','#f44336','#4caf50'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#a07090', font: { family: 'Ubuntu Mono', size: 10 } }, grid: { color: '#4a1540' } },
+        y: { ticks: { color: '#a07090', font: { family: 'Ubuntu Mono', size: 10 } }, grid: { color: '#4a1540' } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
